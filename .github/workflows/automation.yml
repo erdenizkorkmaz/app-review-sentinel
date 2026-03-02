@@ -1,0 +1,42 @@
+name: App Review Sentinel
+
+on:
+  schedule:
+    # Her 4 saatte bir çalıştır
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Cache review data
+      uses: actions/cache@v4
+      with:
+        path: reviews.json
+        key: reviews-${{ github.run_id }}
+        restore-keys: |
+          reviews-
+    
+    - name: Run App Review Sentinel
+      env:
+        APP_CONFIGS: ${{ secrets.APP_CONFIGS }}
+        WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        STORAGE_PATH: reviews.json
+      run: python app_review_sentinel.py
+      
+    - name: Save review data
+      uses: actions/upload-artifact@v4
+      with:
+        name: reviews-data
+        path: reviews.json
+        retention-days: 30
